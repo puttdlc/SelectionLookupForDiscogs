@@ -38,7 +38,7 @@ Example Usage Patterns:
 | A song title (`Chameleon`)| The track name plus its parent album's cover, title, and artist |
 | Anything else | Its single best-guess match, with five ranked alternatives underneath in case the guess is wrong |
 
-From any card, you can keep drilling in: click an artist's name to jump to their artist page, click a track to see which album it's from.
+From any card, you can click an artist's name to jump to their artist page, or click a track to see which album it's from.
 
 Example Usage:
 1. Click an album cover to see its full tracklist
@@ -54,10 +54,17 @@ A selection or right-click sends the query to the `background.js`, which searche
 ## Setup
 
 1. **Clone or download this repository.**
+
+```
+cd <DesiredLocation>
+git clone https://github.com/puttdlc/SelectionLookupForDiscogs.git
+```
+``git clone`` will allocate a folder for you, so no need to make an extra one.
+
 2. **Load it as an unpacked extension:**
    - Open `chrome://extensions`
    - Enable **Developer mode** (top-right toggle)
-   - Click **Load unpacked** and select the `discogs-quick-peek` folder
+   - Click **Load unpacked** and select the `SelectionLookupForDiscogs` folder
 3. **Get a Discogs Personal Access Token:**
    - Go to [discogs.com/settings/developers](https://www.discogs.com/settings/developers) (also linked from the extension popup footer)
    - Generate a token under "Personal Access Token", and copy it to your clipboard.

@@ -238,6 +238,13 @@ style.textContent = `
     margin-top: 1px;
   }
 
+  /* Warning message shown when the token is missing/invalid or a lookup fails */
+  .dqp-error-message {
+    color: #f3a125;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
   /* In-tooltip loading spinner while drill-down fetches */
   .dqp-loading-inner {
     display: flex;
@@ -533,6 +540,38 @@ function buildTrackLayout(data) {
   return frag;
 }
 
+// Warning text shown when a lookup fails (missing/invalid token, no results, etc.)
+function buildErrorMessage(message) {
+  const div = document.createElement("div");
+  div.className = "dqp-error-message";
+  div.textContent = message;
+  return div;
+}
+
+// Standalone warning tooltip — used when there's no tooltip open yet to render into
+function showErrorTooltip(message, x, y) {
+  removeTooltip();
+  tooltip = document.createElement("div");
+  tooltip.className = "dqp-tooltip";
+
+  const scrollInner = document.createElement("div");
+  scrollInner.className = "dqp-scroll-inner";
+  scrollInner.appendChild(buildErrorMessage(message));
+  tooltip.appendChild(scrollInner);
+
+  document.body.appendChild(tooltip);
+
+  const rect = tooltip.getBoundingClientRect();
+  let left = x + 12;
+  let top = y + 12;
+  if (left + rect.width > window.innerWidth) left = x - rect.width - 12;
+  if (top + rect.height > window.innerHeight) top = y - rect.height - 12;
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+
+  requestAnimationFrame(() => tooltip?.classList.add("visible"));
+}
+
 // "Or did you mean?" section — top 5 alternatives to the main result, ranked by score
 function buildAlternativesSection(alternatives) {
   const section = document.createElement("div");
@@ -639,7 +678,12 @@ function performDrillDownSearch(query) {
   const scrollInner = tooltip.querySelector(".dqp-scroll-inner");
   scrollInner.innerHTML = '<div class="dqp-loading-inner"></div>';
   chrome.runtime.sendMessage({ type: "LOOKUP", query }, (response) => {
-    if (chrome.runtime.lastError || !response?.ok) return;
+    if (chrome.runtime.lastError) return;
+    if (!response?.ok) {
+      scrollInner.innerHTML = "";
+      scrollInner.appendChild(buildErrorMessage(response?.error || "Lookup failed."));
+      return;
+    }
     drillDown({ type: response.type, ...response.data });
   });
 }
@@ -648,7 +692,12 @@ function performDrillDownById(id, itemType) {
   const scrollInner = tooltip.querySelector(".dqp-scroll-inner");
   scrollInner.innerHTML = '<div class="dqp-loading-inner"></div>';
   chrome.runtime.sendMessage({ type: "LOOKUP_BY_ID", id, itemType }, (response) => {
-    if (chrome.runtime.lastError || !response?.ok) return;
+    if (chrome.runtime.lastError) return;
+    if (!response?.ok) {
+      scrollInner.innerHTML = "";
+      scrollInner.appendChild(buildErrorMessage(response?.error || "Lookup failed."));
+      return;
+    }
     drillDown({ type: response.type, ...response.data });
   });
 }
@@ -701,7 +750,11 @@ function performLookup(query, x, y) {
   showLoader(x, y);
   chrome.runtime.sendMessage({ type: "LOOKUP", query }, (response) => {
     removeLoader();
-    if (chrome.runtime.lastError || !response?.ok) return;
+    if (chrome.runtime.lastError) return;
+    if (!response?.ok) {
+      showErrorTooltip(response?.error || "Lookup failed.", x, y);
+      return;
+    }
     showTooltip({ type: response.type, ...response.data }, x, y, response.alternatives || []);
   });
 }

@@ -70,12 +70,21 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
+// Throws a user-facing message for an invalid token (401) or other non-OK response
+function checkResponse(res) {
+  if (res.status === 401) throw new Error("Invalid Discogs token. Open the extension popup to update it.");
+  if (!res.ok) throw new Error(`Discogs API error: ${res.status}`);
+  return res;
+}
+
 // Artist handler — fetches profile photo, genres, and top 5 releases sorted by year
 async function handleArtist(id, token) {
   const [artistRes, releasesRes] = await Promise.all([
     fetch(`https://api.discogs.com/artists/${id}?token=${token}`),
     fetch(`https://api.discogs.com/artists/${id}/releases?sort=year&sort_order=desc&per_page=50&token=${token}`)
   ]);
+  checkResponse(artistRes);
+  checkResponse(releasesRes);
   const [artistData, releasesData] = await Promise.all([
     artistRes.json(),
     releasesRes.json()
@@ -111,6 +120,7 @@ async function handleArtist(id, token) {
 // Master handler — same shape as release but hits /masters/{id}
 async function handleMaster(id, token) {
   const res = await fetch(`https://api.discogs.com/masters/${id}?token=${token}`);
+  checkResponse(res);
   const data = await res.json();
   return {
     id: data.id,
@@ -132,6 +142,7 @@ async function handleMaster(id, token) {
 // Release handler — fetches cover, metadata, and full tracklist
 async function handleRelease(id, token) {
   const res = await fetch(`https://api.discogs.com/releases/${id}?token=${token}`);
+  checkResponse(res);
   const data = await res.json();
   return {
     id: data.id,
@@ -154,6 +165,7 @@ async function handleRelease(id, token) {
 async function handleTrack(firstResult, token) {
   const masterId = firstResult.master_id;
   const res = await fetch(`https://api.discogs.com/masters/${masterId}?token=${token}`);
+  checkResponse(res);
   const data = await res.json();
   return {
     trackTitle: firstResult.title,
@@ -241,7 +253,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const searchRes = await fetch(
           `https://api.discogs.com/database/search?q=${encodeURIComponent(message.query)}&per_page=25&token=${token}`
         );
-        if (!searchRes.ok) throw new Error(`Discogs API error: ${searchRes.status}`);
+        checkResponse(searchRes);
         const searchData = await searchRes.json();
 
         if (!searchData.results?.length) throw new Error("No results found for: " + message.query);
