@@ -3,6 +3,7 @@ let tooltip = null;
 let loader = null;
 let navStack = [];
 let currentTooltipData = null;
+let currentAlternatives = null;
 
 // All injected styles for tooltip, loader, and layout variants
 const style = document.createElement("style");
@@ -187,6 +188,56 @@ style.textContent = `
     margin-top: 4px;
   }
 
+  /* "Or did you mean?" alternatives section */
+  .dqp-alternatives {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid #2a2a2a;
+  }
+  .dqp-alt-header {
+    font-size: 10px;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 5px;
+  }
+  .dqp-alt-row {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 3px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .dqp-alt-row:hover {
+    background: #252525;
+  }
+  .dqp-tooltip .dqp-alt-thumb {
+    width: 30px;
+    height: 30px;
+    object-fit: cover;
+    border-radius: 3px;
+    flex-shrink: 0;
+    margin-bottom: 0;
+  }
+  .dqp-alt-info {
+    flex: 1;
+    overflow: hidden;
+  }
+  .dqp-alt-title {
+    font-size: 11px;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .dqp-alt-meta {
+    font-size: 10px;
+    color: #555;
+    margin-top: 1px;
+  }
+
   /* In-tooltip loading spinner while drill-down fetches */
   .dqp-loading-inner {
     display: flex;
@@ -265,6 +316,7 @@ function removeTooltip() {
   }
   navStack = [];
   currentTooltipData = null;
+  currentAlternatives = null;
 }
 
 // Animated dismiss — shrinks and fades before removing from DOM
@@ -277,6 +329,7 @@ function fadeOut() {
   tooltip = null;
   navStack = [];
   currentTooltipData = null;
+  currentAlternatives = null;
 }
 
 // Artist layout — profile photo, name header, scrollable release list
@@ -480,6 +533,57 @@ function buildTrackLayout(data) {
   return frag;
 }
 
+// "Or did you mean?" section — top 5 alternatives to the main result, ranked by score
+function buildAlternativesSection(alternatives) {
+  const section = document.createElement("div");
+  section.className = "dqp-alternatives";
+
+  const header = document.createElement("div");
+  header.className = "dqp-alt-header";
+  header.textContent = "Or did you mean:";
+  section.appendChild(header);
+
+  alternatives.forEach(alt => {
+    const row = document.createElement("div");
+    row.className = "dqp-alt-row";
+    row.addEventListener("click", (e) => {
+      e.stopPropagation();
+      // Tracks resolve to their parent master; everything else looks up by its own ID
+      const itemType = alt.type === "artist" ? "artist"
+                     : alt.type === "master"  ? "master"
+                     : alt.type === "track"   ? "master"
+                     : "release";
+      const id = (alt.type === "track" && alt.master_id) ? alt.master_id : alt.id;
+      performDrillDownById(id, itemType);
+    });
+
+    if (alt.thumb) {
+      const img = document.createElement("img");
+      img.src = alt.thumb;
+      img.className = "dqp-alt-thumb";
+      row.appendChild(img);
+    }
+
+    const info = document.createElement("div");
+    info.className = "dqp-alt-info";
+
+    const title = document.createElement("div");
+    title.className = "dqp-alt-title";
+    title.textContent = alt.title;
+    info.appendChild(title);
+
+    const meta = document.createElement("div");
+    meta.className = "dqp-alt-meta";
+    meta.textContent = [alt.type, alt.year].filter(Boolean).join(" · ");
+    info.appendChild(meta);
+
+    row.appendChild(info);
+    section.appendChild(row);
+  });
+
+  return section;
+}
+
 // Render content into the existing tooltip's scroll area; update nav visibility
 function renderContent(typeAndData) {
   currentTooltipData = typeAndData;
@@ -507,6 +611,11 @@ function renderContent(typeAndData) {
     link.rel = "noopener noreferrer";
     link.textContent = "View on Discogs →";
     scrollInner.appendChild(link);
+  }
+
+  // Only show alternatives at the root level (not when navigated into a sub-item)
+  if (navStack.length === 0 && currentAlternatives?.length) {
+    scrollInner.appendChild(buildAlternativesSection(currentAlternatives));
   }
 
   scrollInner.scrollTop = 0;
@@ -545,8 +654,9 @@ function performDrillDownById(id, itemType) {
 }
 
 // Build and position the tooltip, branching on result type
-function showTooltip(data, x, y) {
-  removeTooltip();
+function showTooltip(data, x, y, alternatives = []) {
+  removeTooltip(); // resets currentAlternatives — must set it again below, after this call
+  currentAlternatives = alternatives;
 
   tooltip = document.createElement("div");
   tooltip.className = "dqp-tooltip";
@@ -592,7 +702,7 @@ function performLookup(query, x, y) {
   chrome.runtime.sendMessage({ type: "LOOKUP", query }, (response) => {
     removeLoader();
     if (chrome.runtime.lastError || !response?.ok) return;
-    showTooltip({ type: response.type, ...response.data }, x, y);
+    showTooltip({ type: response.type, ...response.data }, x, y, response.alternatives || []);
   });
 }
 

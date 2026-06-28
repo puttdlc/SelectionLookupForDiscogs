@@ -178,17 +178,12 @@ function tokenize(str) {
     .filter(w => w.length > 1 && !STOP_WORDS.has(w));
 }
 
-// Score each result against the raw query; higher = better match.
-// Combines title word overlap (most important) with community popularity
-// so a well-known release beats a niche one with a few matching words.
-function pickBestResult(results, query) {
+// Score and sort all results against the raw query; highest score first.
+function rankResults(results, query) {
   const queryTokens = tokenize(query);
-  if (!queryTokens.length) return results[0];
+  if (!queryTokens.length) return [...results];
 
-  let best = results[0];
-  let bestScore = -Infinity;
-
-  for (const result of results) {
+  return [...results].map(result => {
     const titleTokens = new Set(tokenize(result.title || ""));
     const overlap = queryTokens.filter(t => titleTokens.has(t)).length;
     const titleScore = overlap / queryTokens.length;
@@ -205,10 +200,10 @@ function pickBestResult(results, query) {
     const exactMatchBonus = (titleTokens.size === queryTokens.length && overlap === queryTokens.length) ? 2.0 : 0;
 
     const score = titleScore * 3 + popularityScore * 0.5 + typeBonus + exactMatchBonus;
-    if (score > bestScore) { bestScore = score; best = result; }
-  }
-
-  return best;
+    return { result, score };
+  })
+  .sort((a, b) => b.score - a.score)
+  .map(({ result }) => result);
 }
 
 // Main message listener — searches Discogs, detects result type, delegates to handler
@@ -251,8 +246,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         if (!searchData.results?.length) throw new Error("No results found for: " + message.query);
 
-        // Rank the top 25 results by title overlap + popularity
-        const firstResult = pickBestResult(searchData.results, message.query);
+        // Rank all 25 results; [0] is the best match, [1-5] become "Or did you mean?" alternatives
+        const ranked = rankResults(searchData.results, message.query);
+        const firstResult = ranked[0];
+        const alternatives = ranked.slice(1, 6).map(r => ({
+          id: r.id,
+          master_id: r.master_id,
+          type: r.type,
+          title: r.title,
+          thumb: r.thumb,
+          year: r.year
+        }));
         let type, data;
 
         if (firstResult.type === "artist") {
@@ -270,7 +274,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           data = await handleRelease(firstResult.id, token);
         }
 
-        sendResponse({ ok: true, type, data });
+        sendResponse({ ok: true, type, data, alternatives });
       } catch (err) {
         sendResponse({ ok: false, error: err.message });
       }
