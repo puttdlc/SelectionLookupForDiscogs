@@ -104,7 +104,6 @@ This project is built entirely on Discogs's public REST API:
 - `content.js` — injected into every page: tooltip UI, drill-down nav, selection/click listeners
 - `popup.html` — toolbar popup markup and scoped styles
 - `popup.js` — popup logic: reads/writes `chrome.storage.sync` for the token and instant-lookup toggle
-- `icons/icon128.png` — extension icon, used at 16/48/128px (*Subject to change, as this is the placeholder icon from Chrome's extension tutorial*)
 - `LICENSE` — MIT
 
 ## Limitations
