@@ -34,7 +34,7 @@ Example Usage Patterns:
 | You selected... | Quick-Peek shows... |
 |---|---|
 | An artist name (`Herbie Hancock`) | Photo, genre tags, and their 5 most recent releases |
-| An album/release title (`Selected Head Hunters`) | Cover art, year, format, artist credits, and the full tracklist |
+| An album/release title (`Selected Head Hunters`) | Cover art, year, format and the full tracklist |
 | A song title (`Chameleon`)| The track name plus its parent album's cover, title, and artist |
 | Anything else | Its single best-guess match, with five ranked alternatives underneath in case the guess is wrong |
 
