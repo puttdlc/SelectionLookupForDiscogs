@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Discogs Quick-Peek",
   "version": "1.0",
-  "permissions": ["storage"],
+  "permissions": ["storage", "contextMenus"],
   "host_permissions": ["https://api.discogs.com/*"],
   "background": {
     "service_worker": "background.js"

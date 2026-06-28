@@ -1,3 +1,20 @@
+chrome.runtime.onInstalled.addListener(() => {
+  chrome.contextMenus.create({
+    id: "discogs-lookup",
+    title: 'Search Discogs for "%s"',
+    contexts: ["selection"]
+  });
+});
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  if (info.menuItemId === "discogs-lookup" && info.selectionText) {
+    chrome.tabs.sendMessage(tab.id, {
+      type: "CONTEXT_LOOKUP",
+      query: info.selectionText.trim()
+    });
+  }
+});
+
 async function getAlbumCover(query, token) {
   if (!token) throw new Error("No Discogs token set. Open the extension popup to add one.");
 

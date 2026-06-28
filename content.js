@@ -1,4 +1,5 @@
 let tooltip = null;
+let loader = null;
 
 const style = document.createElement("style");
 style.textContent = `
@@ -52,8 +53,54 @@ style.textContent = `
     text-decoration: none;
     font-size: 13px;
   }
+  .dqp-loader {
+    position: fixed;
+    z-index: 9999;
+    width: 32px;
+    height: 32px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 50%;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+  }
+  .dqp-loader.visible {
+    opacity: 1;
+  }
+  .dqp-loader::after {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border: 2px solid #444;
+    border-top-color: #f3a125;
+    border-radius: 50%;
+    animation: dqp-spin 0.7s linear infinite;
+  }
+  @keyframes dqp-spin {
+    to { transform: rotate(360deg); }
+  }
 `;
 document.head.appendChild(style);
+
+function showLoader(x, y) {
+  removeLoader();
+  loader = document.createElement("div");
+  loader.className = "dqp-loader";
+  loader.style.left = `${x + 12}px`;
+  loader.style.top = `${y + 12}px`;
+  document.body.appendChild(loader);
+  requestAnimationFrame(() => loader?.classList.add("visible"));
+}
+
+function removeLoader() {
+  if (!loader) return;
+  const el = loader;
+  el.classList.remove("visible");
+  el.addEventListener("transitionend", () => el.remove(), { once: true });
+  loader = null;
+}
 
 function removeTooltip() {
   if (tooltip) {
@@ -63,6 +110,7 @@ function removeTooltip() {
 }
 
 function fadeOut() {
+  removeLoader();
   if (!tooltip) return;
   const el = tooltip;
   el.classList.add("fading");
@@ -112,6 +160,22 @@ function showTooltip(data, x, y) {
   requestAnimationFrame(() => tooltip?.classList.add("visible"));
 }
 
+let lastRightClickPos = { x: 0, y: 0 };
+
+function performLookup(query, x, y) {
+  removeTooltip();
+  showLoader(x, y);
+  chrome.runtime.sendMessage({ type: "LOOKUP", query }, (response) => {
+    removeLoader();
+    if (chrome.runtime.lastError || !response?.ok) return;
+    showTooltip(response.data, x, y);
+  });
+}
+
+document.addEventListener("contextmenu", (e) => {
+  lastRightClickPos = { x: e.clientX, y: e.clientY };
+});
+
 document.addEventListener("mouseup", (e) => {
   const selectedText = window.getSelection().toString().trim();
   if (!selectedText) {
@@ -119,10 +183,15 @@ document.addEventListener("mouseup", (e) => {
     return;
   }
 
-  chrome.runtime.sendMessage({ type: "LOOKUP", query: selectedText }, (response) => {
-    if (chrome.runtime.lastError || !response?.ok) return;
-    showTooltip(response.data, e.clientX, e.clientY);
+  chrome.storage.sync.get("instantLookup", ({ instantLookup }) => {
+    if (instantLookup) performLookup(selectedText, e.clientX, e.clientY);
   });
+});
+
+chrome.runtime.onMessage.addListener((message) => {
+  if (message.type === "CONTEXT_LOOKUP") {
+    performLookup(message.query, lastRightClickPos.x, lastRightClickPos.y);
+  }
 });
 
 document.addEventListener("mousedown", (e) => {
