@@ -123,6 +123,7 @@ This is an independent, unofficial project and is not affiliated with, endorsed 
 ## Credits
 
 - Built on the [Discogs API](https://www.discogs.com/developers) and the data contributed by the Discogs community.
+- SVG Icons and Extension Icon from [feathericons](https://feathericons.com/)
 
 ## License
 
