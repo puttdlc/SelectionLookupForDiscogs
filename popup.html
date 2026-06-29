@@ -102,6 +102,14 @@
         pointer-events: none;
       }
 
+      .lock-icon svg,
+      .toggle-btn svg {
+        display: block;
+        width: 14px;
+        height: 14px;
+        stroke: currentColor;
+      }
+
       .input-wrapper::after {
         content: "";
         position: absolute;
@@ -288,15 +296,9 @@
 
       <div class="input-wrapper">
         <input type="password" id="tokenInput" class="token-input" placeholder="Paste your token here..." />
-        <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-        </svg>
+        <span class="lock-icon" id="lockIcon"></span>
         <button class="toggle-btn" id="toggleVisibility" title="Show/hide token">
-          <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
+          <span id="eyeIcon"></span>
         </button>
       </div>
 
