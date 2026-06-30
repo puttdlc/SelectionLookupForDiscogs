@@ -203,8 +203,8 @@ function rankResults(results, query) {
     const popularity = (result.community?.have || 0) + (result.community?.want || 0);
     const popularityScore = Math.log10(popularity + 1);
 
-    // Artists first, then masters as canonical release entries
-    const typeBonus = result.type === "artist" ? 1.0 : result.type === "master" ? 0.3 : 0;
+    // Artists get a large bonus so they always beat self-titled albums with the same query
+    const typeBonus = result.type === "artist" ? 4.0 : result.type === "master" ? 0.3 : 0;
 
     // Strong signal: result title tokens exactly equal the query tokens (no extra words).
     // This catches "Snoop Dogg" → artist card (title "Snoop Dogg", 2 tokens = query 2 tokens)
