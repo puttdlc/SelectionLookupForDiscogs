@@ -2,6 +2,8 @@
 
 **Selection Lookup for Discogs!** Highlight any word or phrase on any web page and get an instant Discogs preview: artist bios and genres, album/release artwork and tracklists. It's a way to discover music while you're reading, without leaving the page to go search Discogs yourself.
 
+![Demo Gif](https://s13.gifyu.com/images/bdQ3Q.gif)
+
 This extension is built on the Manifest V3 Chrome extension specification, turning the [Discogs](https://www.discogs.com) database into a convenient inline lookup tool. Easily highlight any artist, album, or track name on any webpage and instantly see release details, cover art, and marketplace info without leaving the page.
 
 ---
@@ -57,14 +59,14 @@ A selection or right-click sends the query to the `background.js`, which searche
 
 ```
 cd <DesiredLocation>
-git clone https://github.com/puttdlc/SelectionLookupForDiscogs.git
+git clone https://github.com/puttdlc/QuickPeekForDiscogs.git
 ```
 ``git clone`` will allocate a folder for you, so no need to make an extra one.
 
 2. **Load it as an unpacked extension:**
    - Open `chrome://extensions`
    - Enable **Developer mode** (top-right toggle)
-   - Click **Load unpacked** and select the `SelectionLookupForDiscogs` folder
+   - Click **Load unpacked** and select the `QuickPeekForDiscogs` folder
 3. **Get a Discogs Personal Access Token:**
    - Go to [discogs.com/settings/developers](https://www.discogs.com/settings/developers) (also linked from the extension popup footer)
    - Generate a token under "Personal Access Token", and copy it to your clipboard.
